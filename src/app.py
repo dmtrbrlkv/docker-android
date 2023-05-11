@@ -6,6 +6,7 @@ import os
 import re
 import subprocess
 import uuid
+from time import sleep
 
 from src import CHROME_DRIVER, CONFIG_FILE, ROOT
 from src import log
@@ -83,7 +84,7 @@ logger.info('Android version: {version} \n'
                                             img=SYS_IMG, img_type=IMG_TYPE))
 
 
-def prepare_avd(device: str, avd_name: str, dp_size: str):
+def prepare_avd(device: str, avd_name: str, dp_size: str, skin_name: str='NO'):
     """
     Create and run android virtual device.
 
@@ -92,7 +93,8 @@ def prepare_avd(device: str, avd_name: str, dp_size: str):
     """
 
     device_name_bash = device.replace(' ', '\ ')
-    skin_name = device.replace(' ', '_').lower()
+    if not skin_name:
+        skin_name = device.replace(' ', '_').lower()
 
     # For custom hardware profile
     profile_dst_path = os.path.join(ROOT, '.android', 'devices.xml')
@@ -112,7 +114,11 @@ def prepare_avd(device: str, avd_name: str, dp_size: str):
     logger.info('Command to create avd: {command}'.format(command=creation_cmd))
     subprocess.check_call(creation_cmd, shell=True)
 
-    skin_path = '/'.join([ANDROID_HOME, 'devices', 'skins', skin_name])
+    if skin_name == 'NO':
+        skin_path = '_no_skin'
+    else:
+        skin_path = '/'.join([ANDROID_HOME, 'devices', 'skins', skin_name])
+
     config_path = '/'.join([avd_path, 'config.ini'])
     with open(config_path, 'a') as file:
         file.write('skin.path={sp}'.format(sp=skin_path))
@@ -208,6 +214,7 @@ def create_node_config(avd_name: str, browser_name: str, appium_host: str, appiu
 def run():
     """Run app."""
     device = os.getenv('DEVICE', 'Nexus 5')
+    skin = os.getenv('SKIN', 'NO')
     logger.info('Device: {device}'.format(device=device))
     custom_args=os.getenv('EMULATOR_ARGS', '')
     logger.info('Custom Args: {custom_args}'.format(custom_args=custom_args))
@@ -220,7 +227,7 @@ def run():
 
     if is_first_run:
         logger.info('Preparing emulator...')
-        prepare_avd(device, avd_name, dp_size)
+        prepare_avd(device, avd_name, dp_size, skin)
 
     logger.info('Run emulator...')
 
@@ -229,15 +236,14 @@ def run():
         cmd = 'emulator @{name} -gpu swiftshader_indirect -accel on -wipe-data -writable-system -verbose {custom_args}'.format(name=avd_name, custom_args=custom_args)
     else:
         logger.info('Using previously initialized AVD...')
+        if os.path.exists('android_emulator/hardware-qemu.ini.lock'):
+            os.remove('android_emulator/hardware-qemu.ini.lock')
+        if os.path.exists('android_emulator/multiinstance.lock'):
+            os.remove('android_emulator/multiinstance.lock')
         cmd = 'emulator @{name} -gpu swiftshader_indirect -accel on -verbose -writable-system {custom_args}'.format(name=avd_name, custom_args=custom_args)
 
-    appium = convert_str_to_bool(str(os.getenv('APPIUM', False)))
-    if appium:
-        subprocess.Popen(cmd.split())
-        logger.info('Run appium server...')
-        appium_run(avd_name)
-    else:
-        result = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE).communicate()
+    logger.info(f'Command to start emulator: {cmd}')
+    result = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE).communicate()
 
 
 if __name__ == '__main__':
