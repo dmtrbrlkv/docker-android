@@ -18,7 +18,9 @@ function change_language_if_needed() {
   if [ ! -z "${LANGUAGE// }" ] && [ ! -z "${COUNTRY// }" ]; then
     wait_emulator_to_be_ready
     echo "Language will be changed to ${LANGUAGE}-${COUNTRY}"
-    adb root && adb shell "setprop persist.sys.language $LANGUAGE; setprop persist.sys.country $COUNTRY; stop; start" && adb unroot
+    adb install /root/src/settings_apk-debug.apk
+    adb shell pm grant io.appium.settings android.permission.CHANGE_CONFIGURATION
+    adb shell am broadcast -a io.appium.settings.locale -n io.appium.settings/.receivers.LocaleSettingReceiver --es lang $LANGUAGE --es country $COUNTRY
     echo "Language is changed!"
   fi
 }
@@ -136,6 +138,14 @@ function check_emulator_popups() {
   echo "Android Emulator started."
 }
 
+function disable_animations () {
+  wait_emulator_to_be_ready
+  echo "Disable animations"
+  adb shell settings put global window_animation_scale 0.0
+  adb shell settings put global transition_animation_scale 0.0
+  adb shell settings put global animator_duration_scale 0.0
+}
+
 change_language_if_needed
 sleep 1
 enable_proxy_if_needed
@@ -143,3 +153,5 @@ sleep 1
 install_google_play
 sleep 1
 check_emulator_popups
+sleep 1
+disable_animations

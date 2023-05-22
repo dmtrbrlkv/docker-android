@@ -67,7 +67,8 @@ RUN apt-get -qqy update && apt-get -qqy install --no-install-recommends \
     ubuntu-vm-builder \
     bridge-utils \
     python3-pip \
-    tint2 \
+#    tint2 \
+    wmctrl \
  && apt clean all \
  && rm -rf /var/lib/apt/lists/*
 
@@ -117,7 +118,7 @@ ADD src/rc.xml /etc/xdg/openbox/rc.xml
 #======================
 # tint
 #======================
-RUN echo "/root/.fehbg & (sleep 2s && tint2)" >> /etc/xdg/openbox/autostart
+# RUN echo "/root/.fehbg & (sleep 2s && tint2)" >> /etc/xdg/openbox/autostart
 
 #======================
 # Install SDK packages
@@ -174,6 +175,7 @@ RUN wget -nv -O chrome.zip "https://chromedriver.storage.googleapis.com/${CHROME
 # See https://github.com/budtmo/docker-android/issues/223
 ENV QTWEBENGINE_DISABLE_SANDBOX=1
 
+ENV WINDOW_CONTROL=1
 #===============
 # Expose Ports
 #---------------
@@ -198,6 +200,7 @@ COPY devices ${ANDROID_HOME}/devices
 # Run docker-appium
 #===================
 COPY src /root/src
+COPY appium-settings/settings_apk-debug.apk /root/src
 COPY supervisord.conf /root/
 RUN chmod -R +x /root/src && chmod +x /root/supervisord.conf
 
