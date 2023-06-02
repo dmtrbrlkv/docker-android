@@ -242,6 +242,18 @@ def run():
             os.remove('android_emulator/multiinstance.lock')
         cmd = 'emulator @{name} -gpu swiftshader_indirect -accel on -verbose -writable-system {custom_args}'.format(name=avd_name, custom_args=custom_args)
 
+    use_proxy = os.getenv('ENABLE_PROXY_ON_EMULATOR')
+    if use_proxy == 'true':
+        http_proxy = os.getenv('HTTP_PROXY')
+        user = os.getenv('HTTP_PROXY_USER')
+        password = os.getenv('HTTP_PROXY_PASSWORD')
+        if user and password:
+            proxy_cmd = f' -http-proxy {user}:{password}@{http_proxy}'
+        else:
+            proxy_cmd = f' -http-proxy {http_proxy}'
+
+        cmd = cmd + proxy_cmd
+
     logger.info(f'Command to start emulator: {cmd}')
     result = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE).communicate()
 

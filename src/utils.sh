@@ -148,8 +148,8 @@ function disable_animations () {
 
 change_language_if_needed
 sleep 1
-enable_proxy_if_needed
-sleep 1
+#enable_proxy_if_needed
+#sleep 1
 install_google_play
 sleep 1
 check_emulator_popups
